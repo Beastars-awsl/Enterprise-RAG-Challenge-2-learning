@@ -89,6 +89,81 @@ IBM 系列已因比赛 API 关闭而失效。配置细节在第 19 章展开。
 
 > **动手**：手绘或用工具画出分治树，与上方"分治地图"对照，差异处写明谁对、为什么。
 
+<details>
+<summary><b>参考答案（先自己画，再展开对照）</b></summary>
+
+以下路径均核实自 `main.py` docstring 与 `src/pipeline.py` 的 `__init__`。
+工作目录 = `data/test_set`，`(...)` 表示 `ser_tab` 变体后缀。
+
+```text
+RAG-Challenge-2 分治树 · 磁盘文件即阶段间接口
+│
+├─ 【输入契约】main.py docstring 定义（1.1 定界）
+│   ├─ subset.csv / subset.json      sha1 → 公司名
+│   ├─ pdf_reports/*.pdf             原始年报（比赛只给 PDF，不给文本）
+│   └─ questions.json                五种题型：name/number/boolean/names/comparative
+│
+├─ 【摄入篇】第 3~5 章 ─────────────────────────────────
+│   ├─ 站① 解析
+│   │    CLI: parse-pdfs              文件: pdf_parsing.py (775行)
+│   │    输入: pdf_reports/*.pdf + subset.csv
+│   │    输出: debug_data/01_parsed_reports/*.json
+│   │         (docling 原始输出 → 01_parsed_reports_debug/，仅排障)
+│   ├─ 站①½ 表格序列化（可选，冠军配置 nst = 不做这步）
+│   │    CLI: serialize-tables        文件: tables_serialization.py (433行)
+│   │    输入/输出: 就地改写 01_parsed_reports/*.json（追加 serialized 字段）
+│   └─ 站② 合并 + 导出
+│        CLI: process-reports 前半    文件: parsed_reports_merging.py (521行)
+│        输入: 01_parsed_reports/     输出: debug_data/02_merged_reports(...)/
+│                                          debug_data/03_reports_markdown(...)/*.md
+│                                          （03 供人工审查 + full_context 模式）
+│
+├─ 【索引篇】第 6~8 章 ─────────────────────────────────
+│   └─ 站③ 切分 + 建库
+│        CLI: process-reports 后半    文件: text_splitter.py (168行)
+│                                            + ingestion.py (185行)
+│        输入: 02_merged_reports(...)/
+│        输出: databases(...)/chunked_reports/   300 token 切块 + 父页
+│              databases(...)/vector_dbs/{sha1}.faiss   FAISS 逐报告建库
+│              databases(...)/bm25_dbs/{sha1}.pkl       BM25 备选（独立步骤，链路未启用）
+│
+├─ 【检索篇】第 9~12 章 ────────────────────────────────
+│   └─ 站④ 检索（process-questions 内部，无独立 CLI）
+│        文件: retrieval.py (403行)   向量召回 + 父文档上卷 + Hybrid 两段式
+│             reranking.py (222行)    LLM 精排 ← 属检索分支、却跑在站④后段
+│        输入: questions.json + vector_dbs/ + chunked_reports/
+│        输出: 每题 top-k 上下文文本（内存中，不落盘）
+│
+├─ 【生成篇】第 13~18 章 ───────────────────────────────
+│   └─ 站⑤ 生成（process-questions 内部）
+│        CLI: process-questions --config <预设>
+│        文件: questions_processing.py (825行)  路由/并发/断点总控
+│             prompts.py (665行)                五题型模板族 + 输出 schema
+│             api_requests.py (798行)           openai/ibm/gemini 适配
+│             api_request_parallel_processor.py (448行)  限速并发队列
+│        输入: 检索上下文 + questions.json
+│        输出: answers{config_suffix}.json          提交文件
+│              answers{config_suffix}_debug.json    推理过程 + token 统计
+│              （同名已存在自动追加 _NN，绝不覆盖）
+│
+└─ 【编排层】第 19~20 章 ── 不在数据流上，是每一站的"扳道工"
+     文件: pipeline.py (634行)   Pipeline 类 + RunConfig 实验矩阵
+           main.py (118行)       click CLI，纯命令解析无业务逻辑
+```
+
+三条对齐要点（对应 1.4 交叉验证）：
+
+1. **后缀规则**：`_ser_tab` 标识表格序列化变体的整条产物链（02/03/databases），
+   `answers` 文件后缀来自 config 名（如 `answers_max_nst_o3m.json`）——两套命名规则不同，
+   定义都在 `Pipeline.__init__`。
+2. **站间解耦**：`01_parsed_reports` 是共享输入，`ser_tab`/`no_ser_tab` 两套下游产物可
+   并排运行；`process-reports` 一个命令实际覆盖 1.2 中的两个站（②+③），所以 1.4 的
+   表格里它是"前半/后半"。
+3. **唯一不落盘的站**：站④⑤发生在 `process-questions` 进程内部，检索结果不写磁盘，
+   只有最终答案落盘——这也是断点续跑只能按"题"粒度而不能按"站"粒度的原因。
+
+</details>
+
 > **自测（合并问题）**
 > 1. 如果让你把系统拆成 4 个可独立开发的模块，边界怎么划？
 > 2. 哪两条边界上有共享文件（如 `questions.json`）？共享带来什么约束？
