@@ -1,0 +1,33 @@
+- [首页](/)
+- 全局篇 · 建图与跑通
+    - [第 1 章 全景地图：从题目到冠军方案](chapter0/01_overview_map.md)
+    - [第 2 章 跑通最小闭环](chapter0/02_minimum_pipeline.md)
+- 摄入篇 · PDF → 结构化文本
+    - [第 3 章 PDF 解析与并行化](chapter1/03_pdf_parsing.md)
+    - [第 4 章 产物合并与 Markdown 导出](chapter1/04_merging_export.md)
+    - [第 5 章 表格序列化](chapter1/05_table_serialization.md)
+- 索引篇 · 文本 → 向量库
+    - [第 6 章 文本切分：chunk 与父页](chapter2/06_text_splitting.md)
+    - [第 7 章 向量库构建：embedding 与 FAISS](chapter2/07_vector_index.md)
+    - [第 8 章 对照方案：BM25](chapter2/08_bm25_baseline.md)
+- 检索篇 · 问题 → 上下文
+    - [第 9 章 父文档检索（PDR）](chapter3/09_parent_document_retrieval.md)
+    - [第 10 章 LLM 重排](chapter3/10_llm_reranking.md)
+    - [第 11 章 两段式混合检索](chapter3/11_hybrid_retrieval.md)
+    - [第 12 章 full_context 大上下文模式](chapter3/12_full_context_mode.md)
+- 生成篇 · 上下文 → 答案
+    - [第 13 章 QuestionsProcessor 总控](chapter4/13_questions_processor.md)
+    - [第 14 章 Prompt 体系与结构化输出](chapter4/14_prompt_system.md)
+    - [第 15 章 五种题型契约](chapter4/15_question_schemas.md)
+    - [第 16 章 API 层与并发](chapter4/16_api_layer.md)
+    - [第 17 章 比较题流水线](chapter4/17_comparative_pipeline.md)
+    - [第 18 章 引用、校验与提交格式](chapter4/18_references_validation.md)
+- 编排篇
+    - [第 19 章 RunConfig 与实验矩阵](chapter5/19_runconfig_matrix.md)
+    - [第 20 章 CLI 与目录契约](chapter5/20_cli_map.md)
+- 评测篇
+    - [第 21 章 误差分析与统计](chapter6/21_error_analysis.md)
+    - [第 22 章 毕业项目：消融与改进](chapter6/22_capstone.md)
+- 附录
+    - [学习大纲速览（22 章总表）](appendix_outline.md)
+    - [在线部署指南](appendix_deploy.md)

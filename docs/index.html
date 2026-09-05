@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>RAG-Challenge-2 学习导读 | 拆解 RAG 比赛冠军方案</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="按分治思想逐模块精读 RAG Challenge 2 冠军源码：PDF 解析、向量索引、父文档检索、LLM 重排、结构化生成与评测迭代">
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+    <style>
+        :root {
+            --dark-bg: #1a1a1a;
+            --dark-sidebar: #141414;
+            --dark-border: #333;
+            --theme-color: #42b883;
+            --dark-text: #e6e6e6;
+            --dark-code-bg: #2b2b2b;
+        }
+
+        body.dark-mode {
+            background-color: var(--dark-bg);
+            color: var(--dark-text);
+        }
+
+        body.dark-mode .sidebar {
+            background-color: var(--dark-sidebar);
+            border-right: 1px solid var(--dark-border);
+            color: var(--dark-text);
+        }
+
+        body.dark-mode .sidebar-nav li a {
+            color: #999;
+        }
+
+        body.dark-mode .sidebar-nav li.active>a {
+            color: var(--theme-color);
+            border-right: 2px solid var(--theme-color);
+        }
+
+        body.dark-mode pre {
+            background-color: var(--dark-code-bg) !important;
+        }
+
+        body.dark-mode code {
+            background-color: var(--dark-code-bg) !important;
+            color: #f8f8f2 !important;
+        }
+
+        body.dark-mode .markdown-section code {
+            color: #f08d49;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-mode h1,
+        body.dark-mode h2,
+        body.dark-mode h3,
+        body.dark-mode h4 {
+            color: #ffffff;
+        }
+
+        body.dark-mode blockquote {
+            color: #b0b0b0;
+            background: rgba(255, 255, 255, 0.05);
+            border-left-color: var(--theme-color);
+        }
+
+        body.dark-mode .markdown-section tr:nth-child(2n) {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        body.dark-mode .markdown-section td,
+        body.dark-mode .markdown-section th {
+            border-color: var(--dark-border);
+            background-color: transparent;
+        }
+
+        body.dark-mode #lang-selector,
+        body.dark-mode .sidebar-toggle-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            border-color: #444;
+        }
+
+        .markdown-section table {
+            display: table;
+            width: auto;
+            max-width: 100%;
+            table-layout: auto;
+        }
+
+        .sidebar-toggle-btn {
+            cursor: pointer;
+            text-align: center;
+            padding: 10px 0;
+            margin: 0 15px 10px 15px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.05);
+            color: #505d6b;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background-color: var(--theme-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">加载中，请稍候...</div>
+    <script>
+        window.$docsify = {
+            name: 'RAG-Challenge-2 导读',
+            repo: '',
+            loadSidebar: true,
+            auto2top: true,
+            subMaxLevel: 3,
+            alias: {
+                '/.*/_sidebar.md': '/_sidebar.md'
+            },
+            search: {
+                maxAge: 86400000,
+                paths: 'auto',
+                placeholder: '🔍 搜索',
+                noData: '😞 找不到结果',
+                depth: 6
+            },
+            pagination: {
+                previousText: '上一章',
+                nextText: '下一章'
+            },
+            count: {
+                countable: true,
+                fontsize: '0.9em',
+                color: 'rgb(90,90,90)',
+                language: 'chinese'
+            },
+            plugins: [
+                // 暗黑模式开关
+                function (hook) {
+                    hook.doneEach(function () {
+                        const sidebar = document.querySelector('.sidebar-nav');
+                        if (!sidebar || document.querySelector('.sidebar-toggle-btn')) return;
+                        const btn = document.createElement('div');
+                        btn.className = 'sidebar-toggle-btn';
+                        if (localStorage.getItem('theme-mode') === 'dark') {
+                            document.body.classList.add('dark-mode');
+                            btn.textContent = '🌙 切换亮色';
+                        } else {
+                            btn.textContent = '☀️ 切换暗色';
+                        }
+                        btn.onclick = function () {
+                            document.body.classList.toggle('dark-mode');
+                            const isDark = document.body.classList.contains('dark-mode');
+                            localStorage.setItem('theme-mode', isDark ? 'dark' : 'light');
+                            btn.textContent = isDark ? '🌙 切换亮色' : '☀️ 切换暗色';
+                        };
+                        sidebar.insertBefore(btn, sidebar.firstChild);
+                    });
+                }
+            ]
+        }
+    </script>
+    <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/plugins/zoom-image.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+    <script src="//unpkg.com/docsify-count@1/dist/countable.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+</body>
+
+</html>
